@@ -4,10 +4,17 @@ const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors') 
 const app = express()
+const path = require('path')
 
+
+// Otetaan käyttöön CORS
 app.use(cors())
 // Otetaan käyttöön JSON-muotoisen datan käsittely
 app.use(express.json())
+// 👇 Tämä rivi on tärkein
+app.use(express.static('dist'))
+
+
 
 // Luo oma Morgan-token:
 morgan.token('body', (req, res) => { 
@@ -54,13 +61,18 @@ let persons = [
     id: "6",
     name: "Matti Meikäläinen",
     number: "050-7654321",
+  },
+  {
+    id: "7",
+    name: "Teppo Urponen",
+    number: "040-9876543",
   }
   
 ]
-// 3. Esimerkki reitistä
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
+// // 3. Esimerkki reitistä   poistetaan koska frontend tuotantoversiona hoitaa tämän
+// app.get('/', (req, res) => {
+//   res.send('Hello World!');
+// });
 
 app.get('/api/persons', (request, response) => {
   response.json(persons)
@@ -118,6 +130,11 @@ app.post('/api/persons', (request, response) => {
   // moderni tapa tehdä sama : persons = [...persons, person]
 
   response.status(201).json(person)
+})
+
+// 3️⃣ VIIMEISENÄ frontend fallback (regex!)
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
 
 const PORT = process.env.PORT || 3001
