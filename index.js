@@ -8,7 +8,10 @@ const path = require('path')
 
 
 // Otetaan käyttöön CORS
-app.use(cors())
+if (process.env.NODE_ENV !== 'production') {
+  const cors = require('cors')
+  app.use(cors())
+}
 // Otetaan käyttöön JSON-muotoisen datan käsittely
 app.use(express.json())
 // 👇 Tämä rivi on tärkein
