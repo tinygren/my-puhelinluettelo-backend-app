@@ -1,11 +1,11 @@
-
+require('dotenv').config()
 // 1. Tuodaan tarvittavat paketit
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors') 
 const app = express()
 const path = require('path')
-
+const Person = require('./models/person')
 
 // Otetaan käyttöön CORS
 if (process.env.NODE_ENV !== 'production') {
@@ -16,8 +16,6 @@ if (process.env.NODE_ENV !== 'production') {
 app.use(express.json())
 // 👇 Tämä rivi on tärkein
 app.use(express.static('dist'))
-
-
 
 // Luo oma Morgan-token:
 morgan.token('body', (req, res) => { 
@@ -33,73 +31,42 @@ app.use(
   morgan(':method :url :status :res[content-length] - :response-time ms :body')
 );
 
-// 2. Luodaan alustava data
-let persons = [
-  {
-    id: "1",
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: "2",    
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-    {       
-    id: "3",    
-    name: "Dan Abramov",
-    number: "12-43-234345", 
-    },
-    {       
-    id: "4",    
-    name: "Mary Poppendieck",
-    number: "39-23-6423122", 
-    },  
-    {
-    id: "5",
-    name: "Timo Timo",
-    number: "050-1234567",
-  },
-  {
-    id: "6",
-    name: "Matti Meikäläinen",
-    number: "050-7654321",
-  },
-  {
-    id: "7",
-    name: "Teppo Urponen",
-    number: "040-9876543",
-  }
-  
-]
-// // 3. Esimerkki reitistä   poistetaan koska frontend tuotantoversiona hoitaa tämän
-// app.get('/', (req, res) => {
-//   res.send('Hello World!');
-// });
 
-app.get('/api/persons', (request, response) => {
-  response.json(persons)
+app.get('/api/people', (request, response, next) => {
+  Person.find({})
+    .then(people => {
+      response.json(people)
+    })
+    .catch(error => next(error))
 })
-
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/people/:id', (request, response, next) => {
   const id = request.params.id
-  const person = persons.find(person => person.id === id)
-  if (person) {
-    response.json(person)
-  } else {
-    response.status(404).end()
-  }
+  Person.findById(id).then(person => {
+    if (person) {
+      response.json(person)
+    } else {
+      response.status(404).end()
+    }
+  })
+  .catch(error => next(error))
 })
 
-app.get('/info', (request, response) => {
+app.get('/info', (request, response, next) => {
   const date = new Date()
-  response.send(`<p>Phonebook has info for ${persons.length} people</p><p>${date}</p>`)
+  Person.countDocuments({})
+    .then(count => {
+      response.send(`<p>Phonebook has info for ${count} people</p><p>${date}</p>`)
+    })
+    .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/people/:id', (request, response, next) => {
   const id = request.params.id
-  persons = persons.filter(person => person.id !== id)
-  response.status(204).end()
+  Person.findByIdAndDelete(id)
+    .then(() => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
 })
 
 function getRandomInt(min, max) {
@@ -109,7 +76,7 @@ function getRandomInt(min, max) {
   // The maximum is exclusive and the minimum is inclusive
 }
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/people', (request, response) => {
   const body = request.body
 
   if (!body.name) {
@@ -117,22 +84,39 @@ app.post('/api/persons', (request, response) => {
   }
   if (!body.number) {
     return response.status(400).json({ error: 'number missing' })
-  }
-
-  if (persons.find(person => person.name === body.name)) {
-    return response.status(400).json({ error: 'name must be unique' })
-  }
-
-  const person = {
-    id: getRandomInt(100, 1000).toString(),
-    name: body.name,
+  }  
+  const person = new Person({
+    name: body.name,                        // id: getRandomInt(100, 1000).toString(),
     number: body.number    
+  })
+
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
+
+})
+app.put('/api/people/:id', (request, response, next) => {
+  const id = request.params.id
+  const body = request.body 
+  const person = {
+    name: body.name,
+    number: body.number,
   }
+  Person.findByIdAndUpdate(id, person, { new: true })
+    .then(updatedPerson => {
+      response.json(updatedPerson)
+    })
+    .catch(error => next(error))
+})
+  
+// Virheidenkäsittelymiddleware
+app.use((error, request, response, next) => {
+  console.error(error.message)
 
-  persons = persons.concat(person)
-  // moderni tapa tehdä sama : persons = [...persons, person]
-
-  response.status(201).json(person)
+  if (error.name === 'CastError') {
+    return response.status(400).json({ error: 'malformatted id' })
+  }
+  next(error)
 })
 
 // 3️⃣ VIIMEISENÄ frontend fallback (regex!)
