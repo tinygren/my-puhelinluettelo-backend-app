@@ -3,10 +3,10 @@ require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors') 
-const app = express()
+
 const path = require('path')
 const Person = require('./models/person')
-
+const app = express()
 // Otetaan käyttöön CORS
 if (process.env.NODE_ENV !== 'production') {
   const cors = require('cors')
@@ -31,6 +31,10 @@ app.use(
   morgan(':method :url :status :res[content-length] - :response-time ms :body')
 );
 
+// 3. Esimerkki reitistä
+app.get('/', (req, res) => {
+  res.send('Greetings from backend!');
+})
 
 app.get('/api/people', (request, response, next) => {
   Person.find({})
@@ -39,6 +43,7 @@ app.get('/api/people', (request, response, next) => {
     })
     .catch(error => next(error))
 })
+
 app.get('/api/people/:id', (request, response, next) => {
   const id = request.params.id
   Person.findById(id).then(person => {
@@ -70,14 +75,8 @@ app.delete('/api/people/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-// function getRandomInt(min, max) {
-//   const minCeiled = Math.ceil(min);
-//   const maxFloored = Math.floor(max);
-//   return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); 
-//   // The maximum is exclusive and the minimum is inclusive
-// }
 
-app.post('/api/people', (request, response) => {
+app.post('/api/people', (request, response, next) => {
   const body = request.body
 
   if (!body.name) {
@@ -94,8 +93,9 @@ app.post('/api/people', (request, response) => {
   person.save().then(savedPerson => {
     response.json(savedPerson)
   })
-
+   .catch(error => next(error))           //  TÄRKEÄ
 })
+
 app.put('/api/people/:id', (request, response, next) => {
   const { name, number } = request.body
   Person.findById(request.params.id)
@@ -112,19 +112,7 @@ app.put('/api/people/:id', (request, response, next) => {
       })
       .catch(error => next(error))
 })
-// app.put('/api/people/:id', (request, response, next) => {
-//   const id = request.params.id
-//   const body = request.body 
-//   const person = {
-//     name: body.name,
-//     number: body.number,
-//   }
-//   Person.findByIdAndUpdate(id, person, { new: true })
-//     .then(updatedPerson => {
-//       response.json(updatedPerson)
-//     })
-//     .catch(error => next(error))
-// })
+
 
 // 3️⃣ VIIMEISENÄ frontend fallback (regex!)
 app.get(/.*/, (req, res) => {

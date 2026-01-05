@@ -5,31 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>puhelinluettelo</title>
-    <script>
-      (function(){
-        const origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url, ...rest){
-          try{
-            if(typeof url === 'string' && url.indexOf('http://localhost:3001') === 0){
-              url = url.replace('http://localhost:3001', '');
-            }
-          }catch(e){}
-          return origOpen.call(this, method, url, ...rest);
-        };
-        if(window.fetch){
-          const origFetch = window.fetch.bind(window);
-          window.fetch = function(resource, init){
-            try{
-              if(typeof resource === 'string' && resource.indexOf('http://localhost:3001') === 0){
-                resource = resource.replace('http://localhost:3001', '');
-              }
-            }catch(e){}
-            return origFetch(resource, init);
-          };
-        }
-      })();
-    </script>
-    <script type="module" crossorigin src="/assets/index-DCr92LOl.js"></script>
+    <script type="module" crossorigin src="/assets/index-CowdF80e.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-C314XDxu.css">
   </head>
   <body>
